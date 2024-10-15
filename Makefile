@@ -1,15 +1,22 @@
 
-
 F_SOURCE = src/fortran
 F_BUILD  = build/fortran
+
 F_LIB = build/fortran/lib
-F_INCLUDE_DIRS = -I$(F_BUILD)/ldpc
+STD_LIB = $(HOME)/.local/lib
+LIBNAMES = ldpc simtools	
+F_INCLUDE_DIRS = $(patsubst %,-I$(F_BUILD)/%, $(LIBNAMES)) -I$(HOME)/.local/include/fortran_stdlib/GNU-11.4.0/
+LIBFILES = $(patsubst %,$(F_LIB)/lib%.a, $(LIBNAMES))
+
+GFFLAGS = -fPIC -O3 -fcoarray=lib -lcaf_openmpi -lfortran_stdlib $(F_INCLUDE_DIRS) -L$(F_LIB) -L$(STD_LIB)
 
 
-.PHONY: all clean
+.PHONY: all test libs clean
 
-all: build/fortran/test/test_decoder_t build/fortran/test/test_create_checknode_buffer
+all: test libs
 
+test: build/fortran/test/test_decoder_t build/fortran/test/test_create_checknode_buffer
+libs: $(LIBFILES)
 
 
 %/:
@@ -17,20 +24,34 @@ all: build/fortran/test/test_decoder_t build/fortran/test/test_create_checknode_
 
 
 $(F_BUILD)/%.o $(F_BUILD)/%.mod $(F_BUILD)/%.smod : $(F_SOURCE)/%.f90
-	gfortran -fPIC -c $< -o $(@D)/$(*F).o -I$(<D) -I$(@D) -J$(@D)
+	gfortran -c $< -o $(@D)/$(*F).o -I$(@D) -J$(@D) $(GFFLAGS)
 
 ################################
 # Dependancies for LDPC module #
 ################################
 LDPC_BUILD = $(F_BUILD)/ldpc
-$(LDPC_BUILD)/%.o: $(LDPC_BUILD)
+$(LDPC_BUILD)/ldpc.smod: $(LDPC_BUILD)/
 LDPC_SUBMODULES_SRC = $(wildcard $(F_SOURCE)/ldpc/ldpc_*.f90)
 LDPC_SUBMODULES_OBJ = $(patsubst $(F_SOURCE)/ldpc/%.f90,$(LDPC_BUILD)/%.o, $(LDPC_SUBMODULES_SRC))
 $(LDPC_SUBMODULES_OBJ) : $(LDPC_BUILD)/ldpc.smod
 $(F_LIB)/libldpc.a : $(LDPC_BUILD)/ldpc.o $(LDPC_SUBMODULES_OBJ)
 
 
-$(F_BUILD)/test/% : $(F_SOURCE)/test/%.f90 $(F_SOURCE)/test/%.f90 $(F_BUILD)/test/ $(F_LIB)/libldpc.a
+####################################
+# Dependancies for SIMTOOLS module #
+####################################
+SIMTOOLS_BUILD = $(F_BUILD)/simtools
+SIMTOOLS_SRC   = $(F_SOURCE)/simtools
+$(SIMTOOLS_BUILD)/simtools.smod: $(SIMTOOLS_BUILD)/
+SIMTOOLS_SUBMODULES_SRC = $(wildcard $(SIMTOOLS_SRC)/simtools_*.f90)
+SIMTOOLS_SUBMODULES_OBJ = $(patsubst $(SIMTOOLS_SRC)/%.f90,$(SIMTOOLS_BUILD)/%.o, $(SIMTOOLS_SUBMODULES_SRC))
+$(SIMTOOLS_SUBMODULES_OBJ) : $(SIMTOOLS_BUILD)/simtools.smod
+$(F_LIB)/libsimtools.a : $(SIMTOOLS_BUILD)/simtools.o $(SIMTOOLS_SUBMODULES_OBJ)
+$(SIMTOOLS_BUILD)/simtools.o $(SIMTOOLS_SUBMODULES_OBJ) : $(F_LIB)/libldpc.a
+
+
+
+$(F_BUILD)/test/% : $(F_SOURCE)/test/%.f90 $(F_BUILD)/test/ $(F_LIB)/libldpc.a
 	gfortran $< -o $@ -L$(F_LIB) -I$(F_BUILD)/ldpc -lldpc
 
 
@@ -45,6 +66,4 @@ $(F_LIB)/lib%.a : $(F_LIB)/
 
 
 clean:
-	rm -rf build/fortran/ldpc/*
-	rm -rf build/fortran/test/*
-	rm -rf build/fortran/lib/*
+	rm -rf $(patsubst %, $(F_BUILD)/%/**, ldpc simtools test lib)

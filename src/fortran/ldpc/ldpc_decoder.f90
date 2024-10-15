@@ -36,6 +36,7 @@ contains
     call invert_table(e_to_c, N, decoder%c_to_e)
 
     allocate(decoder%c_to_v(decoder%cnum))
+    allocate(decoder%v_to_c(decoder%vnum))
 
     do i = 1, decoder%cnum
        decoder%c_to_v(i)%N = decoder%c_to_e(i)%N
@@ -44,7 +45,14 @@ contains
           decoder%c_to_v(i)%edge_list(j) = e_to_v(decoder%c_to_e(i)%edge_list(j)) + 1
        end do
     end do
-    
+
+    do i = 1, decoder%cnum
+       decoder%v_to_c(i)%N = decoder%v_to_e(i)%N
+       allocate(decoder%v_to_c(i)%edge_list(decoder%v_to_c(i)%N))
+       do j = 1, decoder%v_to_c(i)%N
+          decoder%v_to_c(i)%edge_list(j) = e_to_c(decoder%v_to_e(i)%edge_list(j)) + 1
+       end do
+    end do
   end subroutine decoder_from_edge_table
 
   

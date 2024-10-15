@@ -23,7 +23,7 @@ module ldpc
   
   private
 
-  public :: edge_list_t, decoder_t, decoder_from_edge_table, create_checknode_buffer, decode
+  public :: edge_list_t, decoder_t, decoder_from_edge_table, create_checknode_buffer, decode, word_to_syndrome
 
   type, public :: edge_list_t
      integer :: N ! = 1
@@ -37,6 +37,7 @@ module ldpc
      type(edge_list_t), allocatable :: v_to_e(:)
      type(edge_list_t), allocatable :: c_to_e(:)
      type(edge_list_t), allocatable :: c_to_v(:)
+     type(edge_list_t), allocatable :: v_to_c(:)
   end type decoder_t
 
   type, public :: buffer_t
@@ -94,6 +95,14 @@ module ldpc
      end function check_llr
      
   end interface ldpc_checker_routines
+
+  interface ldpc_syndrome_constructor_routines
+     module subroutine word_to_syndrome(decoder, word, synd)
+       type(decoder_t), intent(in) :: decoder
+       logical(kind=c_bool), intent(in) :: word(decoder%vnum)
+       logical(kind=c_bool), intent(out) :: synd(decoder%cnum)
+     end subroutine word_to_syndrome
+  end interface ldpc_syndrome_constructor_routines
   
   
   
