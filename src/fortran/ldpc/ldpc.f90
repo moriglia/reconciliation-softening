@@ -23,11 +23,11 @@ module ldpc
   
   private
 
-  public :: edge_list_t, decoder_t, decoder_from_edge_table, decode, word_to_syndrome
+  public :: edge_list_t, decoder_t, decoder_from_edge_table, decode, word_to_syndrome, c_decode_from_edge_list
 
-  type, public :: edge_list_t
-     integer :: N ! = 1
-     integer, allocatable :: edge_list(:)
+  type :: edge_list_t
+     integer(kind=c_int) :: N ! = 1
+     integer(kind=c_int), allocatable :: edge_list(:)
   end type edge_list_t
   
   type, public :: decoder_t ! (vnum, cnum)
@@ -104,7 +104,22 @@ module ldpc
        logical(kind=c_bool), intent(out) :: synd(decoder%cnum)
      end subroutine word_to_syndrome
   end interface ldpc_syndrome_constructor_routines
-  
+
+  interface
+    module subroutine c_decode_from_edge_list(e_to_v, e_to_c, Nedges, &
+          llr, N, synd, Cnum, final_llr, iter_count) bind(c)
+       integer(kind=c_int), intent(in) :: Nedges
+       integer(kind=c_int), intent(in) :: e_to_v(Nedges)
+       integer(kind=c_int), intent(in) :: e_to_c(Nedges)
+       
+       integer(kind=c_int), intent(in) :: N
+       real(kind=c_double), intent(in) :: llr(N)
+       integer(kind=c_int), intent(in) :: Cnum
+       logical(kind=c_bool), intent(in) :: synd(Cnum)
+       real(kind=c_double), intent(out) :: final_llr(N)
+       integer(kind=c_int), intent(inout) :: iter_count
+     end subroutine c_decode_from_edge_list
+  end interface
   
   
 contains

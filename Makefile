@@ -67,7 +67,7 @@ $(F_LIB)/lib%.a : $(F_LIB)/
 
 CY_SRC = src/cython
 SOEXT = $(shell python3 -c "import distutils; print(distutils.sysconfig.get_config_var('EXT_SUFFIX'))")
-CY_LIST = simtools
+CY_LIST = simtools ldpc
 SO_LIST = $(patsubst %, resoften/%$(SOEXT), $(CY_LIST))
 resoften/%$(SOEXT) : $(CY_SRC)/%.pyx $(LIBFILES)
 resoften/%$(SOEXT) : $(CY_SRC)/%.pyx $(CY_SRC)/%.pxd $(LIBFILES)
