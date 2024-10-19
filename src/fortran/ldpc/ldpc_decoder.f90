@@ -50,7 +50,7 @@ contains
        decoder%v_to_c(i)%N = decoder%v_to_e(i)%N
        allocate(decoder%v_to_c(i)%edge_list(decoder%v_to_c(i)%N))
        do j = 1, decoder%v_to_c(i)%N
-          decoder%v_to_c(i)%edge_list(j) = e_to_c(decoder%v_to_e(i)%edge_list(j)) + 1
+          decoder%v_to_c(i)%edge_list(j) = e_to_c(decoder%c_to_e(i)%edge_list(j)) + 1
        end do
     end do
   end subroutine decoder_from_edge_table

@@ -17,21 +17,18 @@ submodule (ldpc) ldpc_varnode_processor
   ! Message passing at Variable node
 contains
 
-  pure module subroutine process_varnode(edge_group, vnode_index, Ne, message_c_to_v, message_v_to_c, llr, upd_llr)
+  pure module subroutine process_varnode(edge_group, vnode_index, Ne, message_c_to_v, message_v_to_c, llr, upd_llr, vnum)
     type(edge_list_t), intent(in) :: edge_group
     integer, intent(in) :: vnode_index
     integer, intent(in) :: Ne
     real(kind=c_double), intent(in) :: message_c_to_v(Ne)
     real(kind=c_double), intent(out) :: message_v_to_c(Ne)
-    real(kind=c_double), intent(in) :: llr(:)
-    real(kind=c_double), intent(out) :: upd_llr(:)
-
-    type(edge_list_t), pointer :: edge_list_ptr
-    integer :: N_cn ! number of edges connected to THIS vnode
-
-    integer :: i
+    integer, intent(in) :: vnum
+    real(kind=c_double), intent(in) :: llr(vnum)
+    real(kind=c_double), intent(out) :: upd_llr(vnum)
     
-    !    edge_list_ptr => v_to_e(vnode_index)
+    integer :: N_cn ! number of edges connected to THIS vnode
+    integer :: i
 
     N_cn = edge_group%N
 
@@ -41,7 +38,7 @@ contains
     end do
 
     do i = 1, N_cn
-       message_v_to_c(edge_group%edge_list(i)) = upd_llr(vnode_index)-message_c_to_v(edge_group%edge_list(i))
+       message_v_to_c(edge_group%edge_list(i)) = upd_llr(vnode_index) - message_c_to_v(edge_group%edge_list(i))
     end do
     
   end subroutine process_varnode

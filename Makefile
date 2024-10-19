@@ -11,9 +11,9 @@ LIBFILES = $(patsubst %,$(F_LIB)/lib%.a, $(LIBNAMES))
 GFFLAGS = -fPIC -O3 -fcoarray=lib -lcaf_openmpi -lfortran_stdlib $(F_INCLUDE_DIRS) -L$(F_LIB) -L$(STD_LIB)
 
 
-.PHONY: all test libs clean
+.PHONY: all test libs resoften clean cleanf cleancy
 
-all: test libs
+all: test libs resoften
 
 test: build/fortran/test/test_decoder_t build/fortran/test/test_create_checknode_buffer
 libs: $(LIBFILES)
@@ -65,5 +65,24 @@ $(F_LIB)/lib%.a : $(F_LIB)/
 
 
 
-clean:
+CY_SRC = src/cython
+SOEXT = $(shell python3 -c "import distutils; print(distutils.sysconfig.get_config_var('EXT_SUFFIX'))")
+CY_LIST = simtools
+SO_LIST = $(patsubst %, resoften/%$(SOEXT), $(CY_LIST))
+resoften/%$(SOEXT) : $(CY_SRC)/%.pyx $(LIBFILES)
+resoften/%$(SOEXT) : $(CY_SRC)/%.pyx $(CY_SRC)/%.pxd $(LIBFILES)
+resoften/%$(SOEXT) :
+	python3 setup.py build_ext -b . --only $(*F)
+
+resoften : $(SO_LIST) resoften/
+
+
+
+
+clean: cleanf cleancy
+
+cleanf:
 	rm -rf $(patsubst %, $(F_BUILD)/%/**, ldpc simtools test lib)
+
+cleancy:
+	rm -rf $(SO_LIST) $(wildcard build/lib.*/$(CY_SRC)/* build/temp.*/$(CY_SRC)/*)

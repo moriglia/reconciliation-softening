@@ -17,58 +17,62 @@ submodule (ldpc) ldpc_checknode_processor
   ! Message passing at variable checknode
 contains
 
-  module subroutine create_checknode_buffer(c_to_e, cnum, buffer_list)
-    integer, intent(in) :: cnum
-    type(edge_list_t), intent(in) :: c_to_e(cnum)
-    type(buffer_t), target, intent(out) :: buffer_list(cnum)
+  ! module subroutine create_checknode_buffer(c_to_e, cnum, buffer_list)
+  !   integer, intent(in) :: cnum
+  !   type(edge_list_t), intent(in) :: c_to_e(cnum)
+  !   type(buffer_t), intent(out) :: buffer_list(cnum)
 
-    type(buffer_t), pointer :: el_ptr
+  !   ! type(buffer_t), pointer :: el_ptr
 
-    integer :: i, N
+  !   integer :: i, N
 
-    do i = 1, cnum
-       el_ptr => buffer_list(i)
-       N = c_to_e(i)%N - 1
-       el_ptr%N = N
-       allocate(el_ptr%F(N))
-       allocate(el_ptr%B(N))
-    end do
+  !   do i = 1, cnum
+  !      ! el_ptr => buffer_list(i)
+  !      N = c_to_e(i)%N - 1
+  !      buffer_list(i)%N = N
+  !      allocate(buffer_list(i)%F(N))
+  !      allocate(buffer_list(i)%B(N))
+  !   end do
+
+  !   print *, buffer_list(1)%F(1)
        
-  end subroutine create_checknode_buffer
+  ! end subroutine create_checknode_buffer
 
   
-  pure module subroutine process_checknode(edge_group, Ne, s, message_c_to_v, message_v_to_c, buffer)
+  module subroutine process_checknode(edge_group, Ne, s, message_c_to_v, message_v_to_c)
     type(edge_list_t),  intent(in) :: edge_group
+    ! integer, intent(in) :: cnode_index
     integer, intent(in) :: Ne
     logical(kind=c_bool), intent(in) :: s
     real(kind=c_double), intent(out) :: message_c_to_v(Ne)
     real(kind=c_double), intent(in) :: message_v_to_c(Ne)
-    type(buffer_t), intent(out) :: buffer
 
     integer :: N_buff
+    real(kind=c_double) :: F(edge_group%N-1)
+    real(kind=c_double) :: B(edge_group%N-1)
 
     integer :: i, j
     real :: prefactor
+
+    N_buff = edge_group%N-1
 
     ! The usage of 2 buffers F (forward) and B (backward)
     ! Reduces the complexity of the message passing task
     ! from d_c * (d_c - 1) to 3 * (d_c - 2), with d_c the
     ! degree of the current checknode
-    
-    N_buff = buffer%N
-    buffer%F(1)      = message_v_to_c(edge_group%edge_list(1))
-    buffer%B(N_buff) = message_v_to_c(edge_group%edge_list(edge_group%N))
 
+    F(1)      = message_v_to_c(edge_group%edge_list(1))
+    B(N_buff) = message_v_to_c(edge_group%edge_list(edge_group%N))
     j = 1
     do i = 2, N_buff
-       buffer%F(i) = box_plus(buffer%F(j), message_v_to_c(edge_group%edge_list(i)))
-       j = j + 1
+       F(i) = box_plus(F(j), message_v_to_c(edge_group%edge_list(i)))
+       j = i
     end do
 
     j = N_buff
     do i = N_buff-1, 1, -1
-       buffer%B(i) = box_plus(buffer%B(j), message_v_to_c(edge_group%edge_list(i)))
-       j = j - 1
+       B(i) = box_plus(B(j), message_v_to_c(edge_group%edge_list(i)))
+       j = i
     end do
 
     if (s) then
@@ -77,13 +81,13 @@ contains
        prefactor = 1.0
     end if
     
-    message_c_to_v(edge_group%edge_list(1)) = prefactor * buffer%B(1)
-    message_c_to_v(edge_group%edge_list(edge_group%N)) = prefactor * buffer%F(N_buff)
+    message_c_to_v(edge_group%edge_list(1)) = prefactor * B(1)
+    message_c_to_v(edge_group%edge_list(edge_group%N)) = prefactor * F(N_buff)
 
     j = 1
-    do i = 2, N_buff-1
-       message_c_to_v(edge_group%edge_list(i)) = prefactor*box_plus(buffer%F(j), buffer%B(i))
-       j = j + 1
+    do i = 2, N_buff
+       message_c_to_v(edge_group%edge_list(i)) = prefactor * box_plus(F(j), B(i))
+       j = i
     end do
     
   end subroutine process_checknode
@@ -94,6 +98,6 @@ contains
     real(kind=c_double), intent(in) :: b
     real(kind=c_double) :: c
     
-    c = dsign(min(dabs(a), dabs(b)), a * b) + log(1 + exp(-abs(a+b))) - log(1 + exp(-abs(a-b)))
+    c = dsign(min(dabs(a), dabs(b)), a * b) + log(1 + exp(-dabs(a+b))) - log(1 + exp(-dabs(a-b)))
   end function box_plus
 end submodule ldpc_checknode_processor

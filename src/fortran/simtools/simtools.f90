@@ -23,7 +23,7 @@ module simtools
   interface sim_direct_reconciliation
      module subroutine sim_direct(&
           nedges, e_to_v, e_to_c, dec_iters, &
-          nsnr, snr_dB_range, nloops, bps, min_ferr,&
+          nsnr, snr_dB_range, bps, nloops, min_ferr,&
           ber, fer) bind(C)
        integer(kind=c_int), intent(in) :: nedges, nsnr, nloops, dec_iters, bps, min_ferr
        integer(kind=c_int), dimension(nedges), intent(in) :: e_to_c, e_to_v
