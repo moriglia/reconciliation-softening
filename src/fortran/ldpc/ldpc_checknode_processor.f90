@@ -49,10 +49,10 @@ contains
 
     integer :: N_buff
     real(kind=c_double) :: F(edge_group%N-1)
-    real(kind=c_double) :: B(edge_group%N-1)
+    real(kind=c_double) :: B(2:edge_group%N)
 
     integer :: i, j
-    real :: prefactor
+    real(kind=c_double) :: prefactor
 
     N_buff = edge_group%N-1
 
@@ -62,15 +62,16 @@ contains
     ! degree of the current checknode
 
     F(1)      = message_v_to_c(edge_group%edge_list(1))
-    B(N_buff) = message_v_to_c(edge_group%edge_list(edge_group%N))
+    B(edge_group%N) = message_v_to_c(edge_group%edge_list(edge_group%N))
+    
     j = 1
     do i = 2, N_buff
        F(i) = box_plus(F(j), message_v_to_c(edge_group%edge_list(i)))
        j = i
     end do
 
-    j = N_buff
-    do i = N_buff-1, 1, -1
+    j = edge_group%N
+    do i = N_buff, 2, -1
        B(i) = box_plus(B(j), message_v_to_c(edge_group%edge_list(i)))
        j = i
     end do
@@ -81,12 +82,12 @@ contains
        prefactor = 1.0
     end if
     
-    message_c_to_v(edge_group%edge_list(1)) = prefactor * B(1)
+    message_c_to_v(edge_group%edge_list(1)) = prefactor * B(2)
     message_c_to_v(edge_group%edge_list(edge_group%N)) = prefactor * F(N_buff)
 
     j = 1
     do i = 2, N_buff
-       message_c_to_v(edge_group%edge_list(i)) = prefactor * box_plus(F(j), B(i))
+       message_c_to_v(edge_group%edge_list(i)) = prefactor * box_plus(F(j), B(i+1))
        j = i
     end do
     
