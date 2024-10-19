@@ -31,10 +31,14 @@ contains
     decoder%cnum = maxval(e_to_c) + 1
 
     decoder%edge_num = N
-    
+
+    allocate(decoder%v_to_e(decoder%vnum))
+    allocate(decoder%c_to_e(decoder%cnum))
+
     call invert_table(e_to_v, N, decoder%v_to_e)
     call invert_table(e_to_c, N, decoder%c_to_e)
 
+    
     allocate(decoder%c_to_v(decoder%cnum))
     allocate(decoder%v_to_c(decoder%vnum))
 
@@ -46,11 +50,11 @@ contains
        end do
     end do
 
-    do i = 1, decoder%cnum
+    do i = 1, decoder%vnum
        decoder%v_to_c(i)%N = decoder%v_to_e(i)%N
        allocate(decoder%v_to_c(i)%edge_list(decoder%v_to_c(i)%N))
        do j = 1, decoder%v_to_c(i)%N
-          decoder%v_to_c(i)%edge_list(j) = e_to_c(decoder%c_to_e(i)%edge_list(j)) + 1
+          decoder%v_to_c(i)%edge_list(j) = e_to_c(decoder%v_to_e(i)%edge_list(j)) + 1
        end do
     end do
   end subroutine decoder_from_edge_table
@@ -60,7 +64,7 @@ contains
     integer, intent(in) :: N
     integer, intent(in) :: e_to_x(N)
 
-    type(edge_list_t), allocatable, intent(inout) :: x_to_e(:)
+    type(edge_list_t), intent(out) :: x_to_e(:)
     
     integer :: i, xnum
     integer, allocatable :: last_index(:)
@@ -68,7 +72,6 @@ contains
 
     xnum = maxval(e_to_x) + 1
 
-    allocate(x_to_e(xnum))
     allocate(last_index(xnum))
 
     last_index(:) = 0
